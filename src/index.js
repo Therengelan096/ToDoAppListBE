@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { dbConnection } from "./db/connection.js";
 import { runMigrations } from "./db/migrate.js";
 import userRoutes from "./routes/user.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/users", userRoutes);
-
+app.use("/api/categories", categoryRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "API To-Do List inicializada correctamente" });
 });
