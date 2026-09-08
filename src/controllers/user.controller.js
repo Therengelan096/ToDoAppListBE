@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import { pool } from '../db/connection.js';
+import { userDecorator } from '../decorators/user.decorator.js';
 
 export const registerUser = async (req, res) => {
   try {
@@ -37,11 +38,7 @@ export const registerUser = async (req, res) => {
 
     return res.status(201).json({
       message: 'Usuario registrado exitosamente',
-      user: {
-        id: result.insertId,
-        name,
-        email
-      }
+      user: userDecorator(newUser)
     });
   } catch (error) {
     console.error('Error al registrar usuario:', error.message);
