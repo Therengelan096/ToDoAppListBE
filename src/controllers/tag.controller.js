@@ -4,23 +4,21 @@ import {
   tagDecorator,
   tagsListDecorator,
 } from "../decorators/tag.decorator.js";
-
-const isValidId = (id) => typeof id === "string" && id.trim().length === 36;
+import { isValidId } from "../utils/validators.js";
 
 export const index = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT * FROM tags ORDER BY created_at DESC",
+      "SELECT * FROM tags ORDER BY created_at DESC"
     );
     return res.status(200).json({
       tags: tagsListDecorator(rows),
-      status: 200,
     });
   } catch (error) {
     console.error("Error al obtener etiquetas:", error.message);
     return res
       .status(500)
-      .json({ message: "Error interno del servidor", status: 500 });
+      .json({ message: "Error interno del servidor" });
   }
 };
 
@@ -33,7 +31,6 @@ export const store = async (req, res) => {
         .status(400)
         .json({
           message: "Los campos name y user_id son requeridos",
-          status: 400,
         });
     }
 
@@ -50,13 +47,12 @@ export const store = async (req, res) => {
     return res.status(201).json({
       message: "Etiqueta creada",
       tag: tagDecorator(rows[0]),
-      status: 201,
     });
   } catch (error) {
     console.error("Error al crear etiqueta:", error.message);
     return res
       .status(500)
-      .json({ message: "Error interno del servidor", status: 500 });
+      .json({ message: "Error interno del servidor" });
   }
 };
 
@@ -67,7 +63,7 @@ export const show = async (req, res) => {
     if (!isValidId(id)) {
       return res
         .status(400)
-        .json({ message: "Identificador de etiqueta no válido", status: 400 });
+        .json({ message: "Identificador de etiqueta no válido" });
     }
 
     const [rows] = await pool.query("SELECT * FROM tags WHERE id = ?", [id]);
@@ -75,18 +71,17 @@ export const show = async (req, res) => {
     if (rows.length === 0) {
       return res
         .status(404)
-        .json({ message: "Etiqueta no encontrada", status: 404 });
+        .json({ message: "Etiqueta no encontrada" });
     }
 
     return res.status(200).json({
       tag: tagDecorator(rows[0]),
-      status: 200,
     });
   } catch (error) {
     console.error("Error al buscar etiqueta:", error.message);
     return res
       .status(500)
-      .json({ message: "Error interno del servidor", status: 500 });
+      .json({ message: "Error interno del servidor" });
   }
 };
 
@@ -98,13 +93,13 @@ export const update = async (req, res) => {
     if (!isValidId(id)) {
       return res
         .status(400)
-        .json({ message: "Identificador de etiqueta no válido", status: 400 });
+        .json({ message: "Identificador de etiqueta no válido" });
     }
 
     if (!name) {
       return res
         .status(400)
-        .json({ message: "El nombre es obligatorio", status: 400 });
+        .json({ message: "El nombre es obligatorio" });
     }
 
     const [existing] = await pool.query("SELECT * FROM tags WHERE id = ?", [
@@ -113,7 +108,7 @@ export const update = async (req, res) => {
     if (existing.length === 0) {
       return res
         .status(404)
-        .json({ message: "Etiqueta no encontrada", status: 404 });
+        .json({ message: "Etiqueta no encontrada" });
     }
 
     await pool.query("UPDATE tags SET name = ? WHERE id = ?", [name, id]);
@@ -125,13 +120,12 @@ export const update = async (req, res) => {
     return res.status(200).json({
       message: "Etiqueta actualizada",
       tag: tagDecorator(updatedRows[0]),
-      status: 200,
     });
   } catch (error) {
     console.error("Error al actualizar etiqueta:", error.message);
     return res
       .status(500)
-      .json({ message: "Error interno del servidor", status: 500 });
+      .json({ message: "Error interno del servidor" });
   }
 };
 
@@ -142,7 +136,7 @@ export const destroy = async (req, res) => {
     if (!isValidId(id)) {
       return res
         .status(400)
-        .json({ message: "Identificador de etiqueta no válido", status: 400 });
+        .json({ message: "Identificador de etiqueta no válido" });
     }
 
     const [existing] = await pool.query("SELECT * FROM tags WHERE id = ?", [
@@ -151,19 +145,18 @@ export const destroy = async (req, res) => {
     if (existing.length === 0) {
       return res
         .status(404)
-        .json({ message: "Etiqueta no encontrada", status: 404 });
+        .json({ message: "Etiqueta no encontrada" });
     }
 
     await pool.query("DELETE FROM tags WHERE id = ?", [id]);
 
     return res.status(200).json({
       message: "Etiqueta eliminada",
-      status: 200,
     });
   } catch (error) {
     console.error("Error al eliminar etiqueta:", error.message);
     return res
       .status(500)
-      .json({ message: "Error interno del servidor", status: 500 });
+      .json({ message: "Error interno del servidor" });
   }
 };
