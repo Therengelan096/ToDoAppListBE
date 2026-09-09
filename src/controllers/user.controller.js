@@ -98,3 +98,23 @@ export const loginUser = async (req, res) => {
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
+
+export const getProfile = async (req, res) => {
+  try {
+    const [users] = await pool.query(
+      'SELECT id, name, email, created_at FROM user WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    return res.status(200).json({
+      user: userDecorator(users[0])
+    });
+  } catch (error) {
+    console.error('Error al obtener perfil:', error.message);
+    return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
