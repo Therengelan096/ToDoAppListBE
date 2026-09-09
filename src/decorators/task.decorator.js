@@ -10,7 +10,6 @@ export const taskDecorator = (task, category = null, tags = []) => {
     description: task.description,
     status: task.status,
     userId: task.user_id,
-    categoryId: task.category_id,
     createdAt: task.created_at,
     category: category ? categoryDecorator(category) : null,
     tags: tagsListDecorator(tags),
