@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { pool } from '../db/connection.js';
 import { userDecorator } from '../decorators/user.decorator.js';
 
@@ -8,13 +9,13 @@ export const registerUser = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({
-        error: 'Los campos son obligatorios'
+        message: 'Los campos son obligatorios'
       });
     }
 
     if (password.length < 8) {
       return res.status(400).json({
-        error: 'La contraseña debe tener como mínimo 8 caracteres'
+        message: 'La contraseña debe tener como mínimo 8 caracteres'
       });
     }
 
@@ -25,7 +26,7 @@ export const registerUser = async (req, res) => {
 
     if (existingUsers.length > 0) {
       return res.status(422).json({
-        error: 'El correo electrónico ya está registrado'
+        message: 'El correo electrónico ya está registrado'
       });
     }
 
@@ -36,14 +37,64 @@ export const registerUser = async (req, res) => {
       [name, email, hashedPassword]
     );
 
+    const [newUserRows] = await pool.query(
+      'SELECT * FROM user WHERE id = ?',
+      [result.insertId]
+    );
+
     return res.status(201).json({
       message: 'Usuario registrado exitosamente',
-      user: userDecorator(newUser)
+      user: userDecorator(newUserRows[0])
     });
   } catch (error) {
     console.error('Error al registrar usuario:', error.message);
-    return res.status(500).json({
-      error: 'Error interno del servidor'
+    return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: 'El correo electrónico y la contraseña son requeridos'
+      });
+    }
+
+    const [users] = await pool.query(
+      'SELECT * FROM user WHERE email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({
+        message: 'Credenciales inválidas'
+      });
+    }
+
+    const user = users[0];
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: 'Credenciales inválidas'
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET || 'secret_key',
+      { expiresIn: '24h' }
+    );
+
+    return res.status(200).json({
+      token,
+      user: userDecorator(user)
     });
+  } catch (error) {
+    console.error('Error en el inicio de sesión:', error.message);
+    return res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
