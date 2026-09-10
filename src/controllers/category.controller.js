@@ -33,7 +33,6 @@ export const store = async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
 
     return res.status(201).json({
-      message: 'Categoría creada',
       category: categoryDecorator(rows[0])
     });
   } catch (error) {
@@ -88,7 +87,6 @@ export const update = async (req, res) => {
     const [updatedRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
 
     return res.status(200).json({
-      message: 'Categoría actualizada',
       category: categoryDecorator(updatedRows[0])
     });
   } catch (error) {
