@@ -6,6 +6,7 @@ import { runMigrations } from "./db/migrate.js";
 import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import tagRoutes from "./routes/tag.routes.js";
+import taskRoutes from "./routes/task.routes.js";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tags", tagRoutes);
+app.use("/api/tasks", taskRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "API To-Do List inicializada correctamente" });
 });

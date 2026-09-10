@@ -12,11 +12,18 @@ export const runMigrations = async () => {
 
     if (!fs.existsSync(migrationsDir)) return;
 
-    const files = fs.readdirSync(migrationsDir);
+    const orderedFiles = [
+      'user.sql',
+      'category.sql',
+      'tag.sql',
+      'task.sql',
+      'tags_task.sql'
+    ];
 
-    for (const file of files) {
-      if (file.endsWith('.sql')) {
-        const filePath = path.join(migrationsDir, file);
+    for (const file of orderedFiles) {
+      const filePath = path.join(migrationsDir, file);
+
+      if (fs.existsSync(filePath)) {
         const sqlQuery = fs.readFileSync(filePath, 'utf8').trim();
 
         if (!sqlQuery) {
