@@ -5,7 +5,13 @@ import { isValidId } from '../utils/validators.js';
 
 export const index = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM categories ORDER BY created_at DESC');
+    const userId = req.user.user ? req.user.user.id : req.user.id;
+
+    const [rows] = await pool.query(
+      'SELECT * FROM categories WHERE user_id = ? ORDER BY created_at DESC',
+      [userId]
+    );
+
     return res.status(200).json({
       categories: categoriesListDecorator(rows)
     });
@@ -17,17 +23,18 @@ export const index = async (req, res) => {
 
 export const store = async (req, res) => {
   try {
-    const { name, user_id } = req.body;
+    const { name } = req.body;
+    const userId = req.user.user ? req.user.user.id : req.user.id;
 
-    if (!name || !user_id) {
-      return res.status(400).json({ message: 'Los campos name y user_id son requeridos' });
+    if (!name) {
+      return res.status(400).json({ message: 'El campo name es requerido' });
     }
 
     const id = crypto.randomUUID();
 
     await pool.query(
       'INSERT INTO categories (id, name, user_id) VALUES (?, ?, ?)',
-      [id, name, user_id]
+      [id, name, userId]
     );
 
     const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
@@ -44,12 +51,16 @@ export const store = async (req, res) => {
 export const show = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.user ? req.user.user.id : req.user.id;
 
     if (!isValidId(id)) {
       return res.status(400).json({ message: 'Identificador de categoría no válido' });
     }
 
-    const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
+    const [rows] = await pool.query(
+      'SELECT * FROM categories WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
 
     if (rows.length === 0) {
       return res.status(404).json({ message: 'Categoría no encontrada' });
@@ -68,6 +79,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
+    const userId = req.user.user ? req.user.user.id : req.user.id;
 
     if (!isValidId(id)) {
       return res.status(400).json({ message: 'Identificador de categoría no válido' });
@@ -77,12 +89,19 @@ export const update = async (req, res) => {
       return res.status(400).json({ message: 'El nombre es obligatorio' });
     }
 
-    const [existing] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
+    const [existing] = await pool.query(
+      'SELECT * FROM categories WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
     if (existing.length === 0) {
       return res.status(404).json({ message: 'Categoría no encontrada' });
     }
 
-    await pool.query('UPDATE categories SET name = ? WHERE id = ?', [name, id]);
+    await pool.query(
+      'UPDATE categories SET name = ? WHERE id = ? AND user_id = ?',
+      [name, id, userId]
+    );
 
     const [updatedRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
 
@@ -98,17 +117,25 @@ export const update = async (req, res) => {
 export const destroy = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.user ? req.user.user.id : req.user.id;
 
     if (!isValidId(id)) {
       return res.status(400).json({ message: 'Identificador de categoría no válido' });
     }
 
-    const [existing] = await pool.query('SELECT * FROM categories WHERE id = ?', [id]);
+    const [existing] = await pool.query(
+      'SELECT * FROM categories WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
     if (existing.length === 0) {
       return res.status(404).json({ message: 'Categoría no encontrada' });
     }
 
-    await pool.query('DELETE FROM categories WHERE id = ?', [id]);
+    await pool.query(
+      'DELETE FROM categories WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
 
     return res.status(200).json({
       message: 'Categoría eliminada'
