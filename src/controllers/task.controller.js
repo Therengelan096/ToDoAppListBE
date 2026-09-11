@@ -26,7 +26,7 @@ export const index = async (req, res) => {
       return res.status(200).json({ tasks: [] });
     }
 
-    const categoryIds = [...new Set(tasks.map((t) => t.category_id).filter(Boolean))];
+    const categoryIds = [...new Set(tasks.map((task) => task.category_id).filter(Boolean))];
 
     let categoryMap = new Map();
     if (categoryIds.length > 0) {
@@ -34,10 +34,10 @@ export const index = async (req, res) => {
         'SELECT * FROM categories WHERE id IN (?)',
         [categoryIds]
       );
-      categories.forEach((cat) => categoryMap.set(cat.id, cat));
+      categories.forEach((category) => categoryMap.set(category.id, category));
     }
 
-    const taskIds = tasks.map((t) => t.id);
+    const taskIds = tasks.map((task) => task.id);
 
     const [tagRows] = await pool.query(
       `SELECT tags_task.task_id, tags.* FROM tags
@@ -70,10 +70,10 @@ export const index = async (req, res) => {
 
 export const store = async (req, res) => {
   try {
-    const { title, description, status, category_id, tags } = req.body;
+    const { title, description, status, categoryId, tags } = req.body || {};
     const userId = req.user.user ? req.user.user.id : req.user.id;
 
-    if (!title || !category_id) {
+    if (!title || !categoryId) {
       return res.status(400).json({
         message: 'El título y la categoría son requeridos'
       });
@@ -84,7 +84,7 @@ export const store = async (req, res) => {
 
     await pool.query(
       'INSERT INTO tasks (id, title, description, status, category_id, user_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [newTaskId, title, description || null, taskStatus, category_id, userId]
+      [newTaskId, title, description || null, taskStatus, categoryId, userId]
     );
 
     if (Array.isArray(tags) && tags.length > 0) {
@@ -94,7 +94,7 @@ export const store = async (req, res) => {
     }
 
     const [taskRows] = await pool.query('SELECT * FROM tasks WHERE id = ?', [newTaskId]);
-    const [categoryRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [category_id]);
+    const [categoryRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [categoryId]);
     const attachedTags = await getTaskTags(newTaskId);
 
     return res.status(201).json({
@@ -140,7 +140,7 @@ export const show = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, status, category_id, tags } = req.body;
+    const { title, description, status, categoryId, tags } = req.body;
     const userId = req.user.user ? req.user.user.id : req.user.id;
 
     if (!isValidId(id)) {
@@ -156,7 +156,7 @@ export const update = async (req, res) => {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
 
-    if (!title || !category_id) {
+    if (!title || !categoryId) {
       return res.status(400).json({
         message: 'El título y la categoría son requeridos'
       });
@@ -164,7 +164,7 @@ export const update = async (req, res) => {
 
     await pool.query(
       'UPDATE tasks SET title = ?, description = ?, status = ?, category_id = ? WHERE id = ? AND user_id = ?',
-      [title, description || null, status || existing[0].status, category_id, id, userId]
+      [title, description || null, status || existing[0].status, categoryId, id, userId]
     );
 
     if (Array.isArray(tags)) {
@@ -175,7 +175,7 @@ export const update = async (req, res) => {
     }
 
     const [updatedTask] = await pool.query('SELECT * FROM tasks WHERE id = ?', [id]);
-    const [categoryRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [category_id]);
+    const [categoryRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [categoryId]);
     const updatedTags = await getTaskTags(id);
 
     return res.status(200).json({
