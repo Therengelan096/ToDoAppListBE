@@ -104,8 +104,11 @@ export const loginUser = async (req, res) => {
     );
 
     return res.status(200).json({
-      token,
-      user: userDecorator(user)
+      data: {
+        token,
+        user: userDecorator(user)
+      },
+      success: true,
     });
   } catch (error) {
     console.error('Error en el inicio de sesión:', error.message);
