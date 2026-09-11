@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/connection.js';
 import { userDecorator } from '../decorators/user.decorator.js';
+import { isValidEmail } from '../utils/validators.js';
 
 export const registerUser = async (req, res) => {
   try {
@@ -13,6 +14,12 @@ export const registerUser = async (req, res) => {
       });
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        message: 'El correo electrónico no tiene un formato válido'
+      });
+    }
+
     if (password.length < 8) {
       return res.status(400).json({
         message: 'La contraseña debe tener como mínimo 8 caracteres'
@@ -20,7 +27,7 @@ export const registerUser = async (req, res) => {
     }
 
     const [existingUsers] = await pool.query(
-      'SELECT id FROM user WHERE email = ?',
+      'SELECT * FROM user WHERE email = ?',
       [email]
     );
 
@@ -30,7 +37,8 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const [result] = await pool.query(
       'INSERT INTO user (name, email, password) VALUES (?, ?, ?)',
@@ -62,6 +70,12 @@ export const loginUser = async (req, res) => {
       });
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        message: 'El correo electrónico no tiene un formato válido'
+      });
+    }
+
     const [users] = await pool.query(
       'SELECT * FROM user WHERE email = ?',
       [email]
@@ -84,7 +98,7 @@ export const loginUser = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { user: userDecorator(user) },
       process.env.JWT_SECRET || 'secret_key',
       { expiresIn: '24h' }
     );

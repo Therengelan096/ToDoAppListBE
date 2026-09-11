@@ -21,13 +21,40 @@ export const index = async (req, res) => {
       return res.status(200).json({ tasks: [] });
     }
 
-    const formattedTasks = await Promise.all(
-      tasks.map(async (task) => {
-        const [categories] = await pool.query('SELECT * FROM categories WHERE id = ?', [task.category_id]);
-        const tags = await getTaskTags(task.id);
-        return taskDecorator(task, categories[0] || null, tags);
-      })
+    const categoryIds = [...new Set(tasks.map((t) => t.category_id).filter(Boolean))];
+
+    let categoryMap = new Map();
+    if (categoryIds.length > 0) {
+      const [categories] = await pool.query(
+        'SELECT * FROM categories WHERE id IN (?)',
+        [categoryIds]
+      );
+      categories.forEach((cat) => categoryMap.set(cat.id, cat));
+    }
+
+    const taskIds = tasks.map((t) => t.id);
+
+    const [tagRows] = await pool.query(
+      `SELECT tags_task.task_id, tags.* FROM tags
+       INNER JOIN tags_task ON tags.id = tags_task.tag_id
+       WHERE tags_task.task_id IN (?)`,
+      [taskIds]
     );
+
+    const tagsByTaskId = {};
+    tagRows.forEach((row) => {
+      const { task_id, ...tag } = row;
+      if (!tagsByTaskId[task_id]) {
+        tagsByTaskId[task_id] = [];
+      }
+      tagsByTaskId[task_id].push(tag);
+    });
+
+    const formattedTasks = tasks.map((task) => {
+      const category = categoryMap.get(task.category_id) || null;
+      const tags = tagsByTaskId[task.id] || [];
+      return taskDecorator(task, category, tags);
+    });
 
     return res.status(200).json({ tasks: formattedTasks });
   } catch (error) {
@@ -157,10 +184,16 @@ export const destroy = async (req, res) => {
       return res.status(404).json({ message: 'Tarea no encontrada' });
     }
 
+    const task = existing[0];
+    const [categoryRows] = await pool.query('SELECT * FROM categories WHERE id = ?', [task.category_id]);
+    const tags = await getTaskTags(id);
+    const deletedTaskData = taskDecorator(task, categoryRows[0] || null, tags);
     await pool.query('DELETE FROM tags_task WHERE task_id = ?', [id]);
     await pool.query('DELETE FROM tasks WHERE id = ?', [id]);
 
-    return res.status(200).json({ message: 'Tarea eliminada' });
+    return res.status(200).json({
+      task: deletedTaskData
+    });
   } catch (error) {
     console.error('Error al eliminar tarea:', error.message);
     return res.status(500).json({ message: 'Error interno del servidor' });
