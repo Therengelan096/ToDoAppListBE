@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS tasks (
+  id VARCHAR(36) PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  category_id VARCHAR(36) NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
