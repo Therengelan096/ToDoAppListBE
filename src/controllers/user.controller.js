@@ -115,9 +115,10 @@ export const loginUser = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
+    const userId = req.user.user ? req.user.user.id : req.user.id;
     const [users] = await pool.query(
       'SELECT id, name, email, created_at FROM user WHERE id = ?',
-      [req.user.id]
+      [userId]
     );
 
     if (users.length === 0) {
