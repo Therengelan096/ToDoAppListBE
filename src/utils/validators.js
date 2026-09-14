@@ -1,0 +1,1 @@
+export const isValidId = (id) => typeof id === 'string' && id.trim().length === 36;
